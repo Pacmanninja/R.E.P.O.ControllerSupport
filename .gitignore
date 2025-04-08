@@ -1,0 +1,7 @@
+ControllerSupport.sln
+/.vs
+/.git
+*.json
+*.sln
+*.props
+*.cache

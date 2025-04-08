@@ -1,0 +1,69 @@
+C:\Users\pacmanninja998\Desktop\Modding\dll Making\ControllerSupport\ControllerSupport\obj\Debug\net48\ControllerSupport.csproj.AssemblyReference.cache
+C:\Users\pacmanninja998\Desktop\Modding\dll Making\ControllerSupport\ControllerSupport\obj\Debug\net48\MyPluginInfo.cs
+C:\Users\pacmanninja998\Desktop\Modding\dll Making\ControllerSupport\ControllerSupport\obj\Debug\net48\ControllerSupport.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\pacmanninja998\Desktop\Modding\dll Making\ControllerSupport\ControllerSupport\obj\Debug\net48\ControllerSupport.AssemblyInfoInputs.cache
+C:\Users\pacmanninja998\Desktop\Modding\dll Making\ControllerSupport\ControllerSupport\obj\Debug\net48\ControllerSupport.AssemblyInfo.cs
+C:\Users\pacmanninja998\Desktop\Modding\dll Making\ControllerSupport\ControllerSupport\obj\Debug\net48\ControllerSupport.csproj.CoreCompileInputs.cache
+C:\Users\pacmanninja998\Desktop\Modding\dll Making\ControllerSupport\ControllerSupport\bin\Debug\net48\ControllerSupport.dll
+C:\Users\pacmanninja998\Desktop\Modding\dll Making\ControllerSupport\ControllerSupport\bin\Debug\net48\ControllerSupport.pdb
+C:\Users\pacmanninja998\Desktop\Modding\dll Making\ControllerSupport\ControllerSupport\bin\Debug\net48\SharpDX.dll
+C:\Users\pacmanninja998\Desktop\Modding\dll Making\ControllerSupport\ControllerSupport\bin\Debug\net48\SharpDX.XInput.dll
+C:\Users\pacmanninja998\Desktop\Modding\dll Making\ControllerSupport\ControllerSupport\bin\Debug\net48\Assembly-CSharp.dll
+C:\Users\pacmanninja998\Desktop\Modding\dll Making\ControllerSupport\ControllerSupport\bin\Debug\net48\Unity.InputSystem.dll
+C:\Users\pacmanninja998\Desktop\Modding\dll Making\ControllerSupport\ControllerSupport\bin\Debug\net48\UnityEngine.CoreModule.dll
+C:\Users\pacmanninja998\Desktop\Modding\dll Making\ControllerSupport\ControllerSupport\bin\Debug\net48\UnityEngine.dll
+C:\Users\pacmanninja998\Desktop\Modding\dll Making\ControllerSupport\ControllerSupport\bin\Debug\net48\UnityEngine.InputLegacyModule.dll
+C:\Users\pacmanninja998\Desktop\Modding\dll Making\ControllerSupport\ControllerSupport\bin\Debug\net48\PhotonUnityNetworking.dll
+C:\Users\pacmanninja998\Desktop\Modding\dll Making\ControllerSupport\ControllerSupport\bin\Debug\net48\Unity.TextMeshPro.dll
+C:\Users\pacmanninja998\Desktop\Modding\dll Making\ControllerSupport\ControllerSupport\bin\Debug\net48\UnityEngine.UI.dll
+C:\Users\pacmanninja998\Desktop\Modding\dll Making\ControllerSupport\ControllerSupport\bin\Debug\net48\Klattersynth.dll
+C:\Users\pacmanninja998\Desktop\Modding\dll Making\ControllerSupport\ControllerSupport\bin\Debug\net48\Unity.AI.Navigation.dll
+C:\Users\pacmanninja998\Desktop\Modding\dll Making\ControllerSupport\ControllerSupport\bin\Debug\net48\PhotonVoice.PUN.dll
+C:\Users\pacmanninja998\Desktop\Modding\dll Making\ControllerSupport\ControllerSupport\bin\Debug\net48\PhotonRealtime.dll
+C:\Users\pacmanninja998\Desktop\Modding\dll Making\ControllerSupport\ControllerSupport\bin\Debug\net48\Photon3Unity3D.dll
+C:\Users\pacmanninja998\Desktop\Modding\dll Making\ControllerSupport\ControllerSupport\bin\Debug\net48\PhotonUnityNetworking.Utilities.dll
+C:\Users\pacmanninja998\Desktop\Modding\dll Making\ControllerSupport\ControllerSupport\bin\Debug\net48\Assembly-CSharp-firstpass.dll
+C:\Users\pacmanninja998\Desktop\Modding\dll Making\ControllerSupport\ControllerSupport\bin\Debug\net48\Facepunch.Steamworks.Win64.dll
+C:\Users\pacmanninja998\Desktop\Modding\dll Making\ControllerSupport\ControllerSupport\bin\Debug\net48\PhotonVoice.dll
+C:\Users\pacmanninja998\Desktop\Modding\dll Making\ControllerSupport\ControllerSupport\bin\Debug\net48\Unity.Postprocessing.Runtime.dll
+C:\Users\pacmanninja998\Desktop\Modding\dll Making\ControllerSupport\ControllerSupport\bin\Debug\net48\Unity.VisualScripting.Core.dll
+C:\Users\pacmanninja998\Desktop\Modding\dll Making\ControllerSupport\ControllerSupport\bin\Debug\net48\PhotonVoice.API.dll
+C:\Users\pacmanninja998\Desktop\Modding\dll Making\ControllerSupport\ControllerSupport\bin\Debug\net48\websocket-sharp.dll
+C:\Users\pacmanninja998\Desktop\Modding\dll Making\ControllerSupport\ControllerSupport\obj\Debug\net48\Controll.B55B9F46.Up2Date
+C:\Users\pacmanninja998\Desktop\Modding\dll Making\ControllerSupport\ControllerSupport\obj\Debug\net48\ControllerSupport.dll
+C:\Users\pacmanninja998\Desktop\Modding\dll Making\ControllerSupport\ControllerSupport\obj\Debug\net48\ControllerSupport.pdb
+C:\Users\pacmanninja998\Documents\GitHub\R.E.P.O.-Controller-Support\bin\Debug\net48\ControllerSupport.dll
+C:\Users\pacmanninja998\Documents\GitHub\R.E.P.O.-Controller-Support\bin\Debug\net48\ControllerSupport.pdb
+C:\Users\pacmanninja998\Documents\GitHub\R.E.P.O.-Controller-Support\bin\Debug\net48\SharpDX.dll
+C:\Users\pacmanninja998\Documents\GitHub\R.E.P.O.-Controller-Support\bin\Debug\net48\SharpDX.XInput.dll
+C:\Users\pacmanninja998\Documents\GitHub\R.E.P.O.-Controller-Support\bin\Debug\net48\Assembly-CSharp.dll
+C:\Users\pacmanninja998\Documents\GitHub\R.E.P.O.-Controller-Support\bin\Debug\net48\Unity.InputSystem.dll
+C:\Users\pacmanninja998\Documents\GitHub\R.E.P.O.-Controller-Support\bin\Debug\net48\UnityEngine.CoreModule.dll
+C:\Users\pacmanninja998\Documents\GitHub\R.E.P.O.-Controller-Support\bin\Debug\net48\UnityEngine.dll
+C:\Users\pacmanninja998\Documents\GitHub\R.E.P.O.-Controller-Support\bin\Debug\net48\UnityEngine.InputLegacyModule.dll
+C:\Users\pacmanninja998\Documents\GitHub\R.E.P.O.-Controller-Support\bin\Debug\net48\PhotonUnityNetworking.dll
+C:\Users\pacmanninja998\Documents\GitHub\R.E.P.O.-Controller-Support\bin\Debug\net48\Unity.TextMeshPro.dll
+C:\Users\pacmanninja998\Documents\GitHub\R.E.P.O.-Controller-Support\bin\Debug\net48\UnityEngine.UI.dll
+C:\Users\pacmanninja998\Documents\GitHub\R.E.P.O.-Controller-Support\bin\Debug\net48\Klattersynth.dll
+C:\Users\pacmanninja998\Documents\GitHub\R.E.P.O.-Controller-Support\bin\Debug\net48\Unity.AI.Navigation.dll
+C:\Users\pacmanninja998\Documents\GitHub\R.E.P.O.-Controller-Support\bin\Debug\net48\PhotonVoice.PUN.dll
+C:\Users\pacmanninja998\Documents\GitHub\R.E.P.O.-Controller-Support\bin\Debug\net48\PhotonRealtime.dll
+C:\Users\pacmanninja998\Documents\GitHub\R.E.P.O.-Controller-Support\bin\Debug\net48\Photon3Unity3D.dll
+C:\Users\pacmanninja998\Documents\GitHub\R.E.P.O.-Controller-Support\bin\Debug\net48\PhotonUnityNetworking.Utilities.dll
+C:\Users\pacmanninja998\Documents\GitHub\R.E.P.O.-Controller-Support\bin\Debug\net48\Assembly-CSharp-firstpass.dll
+C:\Users\pacmanninja998\Documents\GitHub\R.E.P.O.-Controller-Support\bin\Debug\net48\Facepunch.Steamworks.Win64.dll
+C:\Users\pacmanninja998\Documents\GitHub\R.E.P.O.-Controller-Support\bin\Debug\net48\PhotonVoice.dll
+C:\Users\pacmanninja998\Documents\GitHub\R.E.P.O.-Controller-Support\bin\Debug\net48\Unity.Postprocessing.Runtime.dll
+C:\Users\pacmanninja998\Documents\GitHub\R.E.P.O.-Controller-Support\bin\Debug\net48\Unity.VisualScripting.Core.dll
+C:\Users\pacmanninja998\Documents\GitHub\R.E.P.O.-Controller-Support\bin\Debug\net48\PhotonVoice.API.dll
+C:\Users\pacmanninja998\Documents\GitHub\R.E.P.O.-Controller-Support\bin\Debug\net48\websocket-sharp.dll
+C:\Users\pacmanninja998\Documents\GitHub\R.E.P.O.-Controller-Support\obj\Debug\net48\ControllerSupport.csproj.AssemblyReference.cache
+C:\Users\pacmanninja998\Documents\GitHub\R.E.P.O.-Controller-Support\obj\Debug\net48\MyPluginInfo.cs
+C:\Users\pacmanninja998\Documents\GitHub\R.E.P.O.-Controller-Support\obj\Debug\net48\ControllerSupport.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\pacmanninja998\Documents\GitHub\R.E.P.O.-Controller-Support\obj\Debug\net48\ControllerSupport.AssemblyInfoInputs.cache
+C:\Users\pacmanninja998\Documents\GitHub\R.E.P.O.-Controller-Support\obj\Debug\net48\ControllerSupport.AssemblyInfo.cs
+C:\Users\pacmanninja998\Documents\GitHub\R.E.P.O.-Controller-Support\obj\Debug\net48\ControllerSupport.csproj.CoreCompileInputs.cache
+C:\Users\pacmanninja998\Documents\GitHub\R.E.P.O.-Controller-Support\obj\Debug\net48\ControllerSupport.sourcelink.json
+C:\Users\pacmanninja998\Documents\GitHub\R.E.P.O.-Controller-Support\obj\Debug\net48\Controll.B55B9F46.Up2Date
+C:\Users\pacmanninja998\Documents\GitHub\R.E.P.O.-Controller-Support\obj\Debug\net48\ControllerSupport.dll
+C:\Users\pacmanninja998\Documents\GitHub\R.E.P.O.-Controller-Support\obj\Debug\net48\ControllerSupport.pdb
