@@ -1,4 +1,3 @@
-# Place this in your main repository at: .github/workflows/update-thunderstore.yml
 name: Update Thunderstore Repository
 
 on:
@@ -111,14 +110,14 @@ jobs:
           
           echo "Found DLL at: $DLL_PATH"
           
-          # Ensure target directory exists
-          mkdir -p thunderstore-repo/BepInEx/plugins
+          # Ensure target directory exists in the package directory
+          mkdir -p thunderstore-repo/package/BepInEx/plugins
           
-          # Copy the DLL
-          cp "$DLL_PATH" thunderstore-repo/BepInEx/plugins/
+          # Copy the DLL to the package directory
+          cp "$DLL_PATH" thunderstore-repo/package/BepInEx/plugins/
           
           # Verify the copy worked
-          if [ -f "thunderstore-repo/BepInEx/plugins/ControllerSupport.dll" ]; then
+          if [ -f "thunderstore-repo/package/BepInEx/plugins/ControllerSupport.dll" ]; then
             echo "DLL updated successfully"
           else
             echo "Error: DLL copy failed!"
@@ -165,32 +164,33 @@ jobs:
           echo "Thunderstore repo contents:"
           ls -la
           
-          if [ -f "manifest.json" ]; then
+          if [ -f "package/manifest.json" ]; then
             echo "Original manifest.json content:"
-            cat manifest.json
+            cat package/manifest.json
             
             # Install jq if needed
             sudo apt-get update && sudo apt-get install -y jq
             
             # Update version in manifest.json
-            jq ".version_number = \"$VERSION_CLEAN\"" manifest.json > temp.json && mv temp.json manifest.json
+            jq ".version_number = \"$VERSION_CLEAN\"" package/manifest.json > temp.json && mv temp.json package/manifest.json
             echo "Updated manifest.json version to $VERSION_CLEAN"
             echo "New manifest.json content:"
-            cat manifest.json
+            cat package/manifest.json
           else
-            echo "Warning: manifest.json not found"
+            echo "Warning: manifest.json not found in package directory"
           fi
           
           # Update CHANGELOG.md
-          if [ -f "CHANGELOG.md" ]; then
+          if [ -f "package/CHANGELOG.md" ]; then
             echo "Original CHANGELOG.md exists"
             # Add new release info to the top of the changelog
-            echo -e "## $VERSION_CLEAN ($(date '+%Y-%m-%d'))\n$RELEASE_BODY\n\n$(cat CHANGELOG.md)" > CHANGELOG.md
+            echo -e "## $VERSION_CLEAN ($(date '+%Y-%m-%d'))\n$RELEASE_BODY\n\n$(cat package/CHANGELOG.md)" > package/CHANGELOG.md
             echo "Updated CHANGELOG.md with release notes"
           else
             echo "Creating new CHANGELOG.md"
             # Create CHANGELOG.md if it doesn't exist
-            echo -e "# Changelog\n\n## $VERSION_CLEAN ($(date '+%Y-%m-%d'))\n$RELEASE_BODY" > CHANGELOG.md
+            mkdir -p package
+            echo -e "# Changelog\n\n## $VERSION_CLEAN ($(date '+%Y-%m-%d'))\n$RELEASE_BODY" > package/CHANGELOG.md
             echo "Created CHANGELOG.md with release notes"
           fi
       
@@ -201,7 +201,7 @@ jobs:
           git config user.email "actions@github.com"
           
           echo "Checking for DLL file before commit:"
-          ls -la BepInEx/plugins/ || echo "DLL directory not found!"
+          ls -la package/BepInEx/plugins/ || echo "DLL directory not found!"
           
           git add -A  # Add all changes
           
