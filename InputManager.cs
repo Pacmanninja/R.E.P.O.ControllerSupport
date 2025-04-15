@@ -1,6 +1,7 @@
 ﻿using System;
 using BepInEx.Logging;
 using SharpDX.XInput;
+using UnityEngine;
 using UnityEngine.InputSystem;
 
 namespace ControllerSupport
@@ -13,7 +14,6 @@ namespace ControllerSupport
         private readonly KeyboardSimulator _keyboardSimulator;
         private readonly MouseSimulator _mouseSimulator;
         private readonly JoystickZoneHandler _joystickZoneHandler;
-
         private State _previousState;
         private bool _isControllerConnected;
 
@@ -25,8 +25,8 @@ namespace ControllerSupport
             _keyboardSimulator = new KeyboardSimulator(logger, configManager);
             _mouseSimulator = new MouseSimulator(logger, configManager);
             _joystickZoneHandler = new JoystickZoneHandler(logger, configManager, _keyboardSimulator);
-
             _isControllerConnected = _controller.IsConnected;
+
             if (_isControllerConnected)
             {
                 _logger.LogInfo("Controller connected!");
@@ -40,7 +40,6 @@ namespace ControllerSupport
 
         public void Update()
         {
-            // Process dev inputs first
             ProcessDevInputs();
 
             bool wasConnected = _isControllerConnected;
@@ -66,7 +65,6 @@ namespace ControllerSupport
             {
                 State state = _controller.GetState();
 
-                // Log controller inputs if debug is enabled
                 if (_configManager.DebugOutput)
                 {
                     _logger.LogInfo($"Left Stick: X={state.Gamepad.LeftThumbX}, Y={state.Gamepad.LeftThumbY}");
@@ -78,8 +76,29 @@ namespace ControllerSupport
                 ProcessButtonInputs(state);
                 ProcessJoystickInputs(state);
                 ProcessTriggerInputs(state);
-
                 _previousState = state;
+
+                // Auto-release Shift after WASD inactivity
+                if (_configManager.AutoReleaseShiftAfterWASD && _keyboardSimulator.IsShiftPressed)
+                {
+                    float timeSinceLastWASDActivity = Time.realtimeSinceStartup - _joystickZoneHandler.LastWASDActivityTime;
+                    if (timeSinceLastWASDActivity > _configManager.ShiftReleaseDelay)
+                    {
+                        if (_configManager.EnableShiftToggle)
+                        {
+                            if (_keyboardSimulator.IsShiftPressed)
+                            {
+                                _keyboardSimulator.ToggleShift();
+                                if (_configManager.DebugOutput) _logger.LogInfo("Auto-released Shift after WASD inactivity");
+                            }
+                        }
+                        else
+                        {
+                            _keyboardSimulator.SendKeyEvent(Key.LeftShift, false);
+                            if (_configManager.DebugOutput) _logger.LogInfo("Auto-released Shift after WASD inactivity");
+                        }
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -94,7 +113,6 @@ namespace ControllerSupport
             if (!_configManager.DevMode)
                 return;
 
-            // Check for numpad key presses to adjust settings
             if (Keyboard.current[Key.NumpadPlus].wasPressedThisFrame)
             {
                 float newValue = _configManager.IncreaseScrollSpeed();
@@ -112,7 +130,6 @@ namespace ControllerSupport
                 float magnitude = (float)Math.Sqrt(
                     _configManager.CurrentJoystickX * _configManager.CurrentJoystickX +
                     _configManager.CurrentJoystickY * _configManager.CurrentJoystickY);
-
                 float newValue = _configManager.UpdateDeadZoneRadius(magnitude);
                 _logger.LogInfo($"Updated DeadZoneRadius to {newValue:F4} based on current joystick position");
             }
@@ -126,9 +143,14 @@ namespace ControllerSupport
 
         private void ProcessButtonInputs(State state)
         {
-            // A Button - Space
+            // A Button - Space (and release Ctrl if configured)
             if ((state.Gamepad.Buttons & GamepadButtonFlags.A) != 0 && (_previousState.Gamepad.Buttons & GamepadButtonFlags.A) == 0)
             {
+                if (_configManager.ReleaseCtrlOnA && _keyboardSimulator.IsCtrlToggled)
+                {
+                    _keyboardSimulator.ToggleCtrl();
+                    if (_configManager.DebugOutput) _logger.LogInfo("Released Ctrl due to A button press");
+                }
                 _keyboardSimulator.SendKeyEvent(Key.Space, true);
                 if (_configManager.DebugOutput) _logger.LogInfo("A pressed - Space");
             }
@@ -148,7 +170,7 @@ namespace ControllerSupport
                 _keyboardSimulator.SendKeyEvent(Key.E, false);
             }
 
-            // B Button - Ctrl (Toggle)
+            // B Button - Ctrl (toggle)
             if ((state.Gamepad.Buttons & GamepadButtonFlags.B) != 0 && (_previousState.Gamepad.Buttons & GamepadButtonFlags.B) == 0)
             {
                 if (_configManager.EnableCtrlToggle)
@@ -181,9 +203,19 @@ namespace ControllerSupport
                 _keyboardSimulator.SendKeyEvent(Key.Q, false);
             }
 
-            // Left Stick Press (L3) - Shift
+            // Left Stick Press (L3) - Shift (and release Ctrl/Tab if configured)
             if ((state.Gamepad.Buttons & GamepadButtonFlags.LeftThumb) != 0 && (_previousState.Gamepad.Buttons & GamepadButtonFlags.LeftThumb) == 0)
             {
+                if (_configManager.ReleaseCtrlOnShift && _keyboardSimulator.IsCtrlToggled)
+                {
+                    _keyboardSimulator.ToggleCtrl();
+                    if (_configManager.DebugOutput) _logger.LogInfo("Released Ctrl due to Shift activation");
+                }
+                if (_configManager.ReleaseTabOnShift && _keyboardSimulator.IsTabToggled)
+                {
+                    _keyboardSimulator.ToggleTab();
+                    if (_configManager.DebugOutput) _logger.LogInfo("Released Tab due to Shift activation");
+                }
                 if (_configManager.EnableShiftToggle)
                 {
                     _keyboardSimulator.ToggleShift();
@@ -287,10 +319,7 @@ namespace ControllerSupport
 
         private void ProcessJoystickInputs(State state)
         {
-            // Process left joystick for WASD movement
             _joystickZoneHandler.ProcessLeftJoystick(state.Gamepad.LeftThumbX, state.Gamepad.LeftThumbY);
-
-            // Process right joystick for mouse movement
             _mouseSimulator.MoveMouse(state.Gamepad.RightThumbX, state.Gamepad.RightThumbY);
         }
 

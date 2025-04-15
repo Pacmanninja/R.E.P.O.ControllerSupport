@@ -9,7 +9,6 @@ namespace ControllerSupport
     {
         private readonly ManualLogSource _logger;
         private readonly ConfigManager _configManager;
-
         private bool _wPressed, _aPressed, _sPressed, _dPressed, _shiftPressed, _ctrlToggled, _tabToggled;
 
         public bool IsWPressed => _wPressed;
@@ -39,10 +38,10 @@ namespace ControllerSupport
         }
 
         public void ToggleShift()
-{
-    _shiftPressed = !_shiftPressed;
-    SendKeyEvent(Key.LeftShift, _shiftPressed);
-}
+        {
+            _shiftPressed = !_shiftPressed;
+            SendKeyEvent(Key.LeftShift, _shiftPressed);
+        }
 
         public void SendKeyEvent(Key key, bool isPressed)
         {
@@ -71,7 +70,6 @@ namespace ControllerSupport
             if (_configManager.DebugOutput)
                 _logger.LogInfo($"Key {key} {(isPressed ? "pressed" : "released")}");
         }
-
 
         private void UpdateKeyState(Key key, bool isPressed)
         {

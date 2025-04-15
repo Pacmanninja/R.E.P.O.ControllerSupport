@@ -1,5 +1,6 @@
 ﻿using System;
 using BepInEx.Logging;
+using UnityEngine;
 using UnityEngine.InputSystem;
 
 namespace ControllerSupport
@@ -17,12 +18,16 @@ namespace ControllerSupport
         private bool _lastAPressed = false;
         private bool _lastSPressed = false;
         private bool _lastDPressed = false;
+        private float _lastWASDActivityTime = 0f;
+
+        public float LastWASDActivityTime => _lastWASDActivityTime;
 
         public JoystickZoneHandler(ManualLogSource logger, ConfigManager configManager, KeyboardSimulator keyboardSimulator)
         {
             _logger = logger;
             _configManager = configManager;
             _keyboardSimulator = keyboardSimulator;
+            _lastWASDActivityTime = Time.realtimeSinceStartup;
         }
 
         public void ProcessLeftJoystick(short x, short y)
@@ -112,6 +117,12 @@ namespace ControllerSupport
                 }
             }
 
+            // Update WASD activity time if any direction is active
+            if (shouldPressW || shouldPressA || shouldPressS || shouldPressD)
+            {
+                _lastWASDActivityTime = Time.realtimeSinceStartup;
+            }
+
             // Only send key events and log when key states change
             if (shouldPressW != _lastWPressed)
             {
@@ -151,7 +162,6 @@ namespace ControllerSupport
             if (_lastAPressed) _keyboardSimulator.SendKeyEvent(Key.A, false);
             if (_lastSPressed) _keyboardSimulator.SendKeyEvent(Key.S, false);
             if (_lastDPressed) _keyboardSimulator.SendKeyEvent(Key.D, false);
-
             _lastWPressed = false;
             _lastAPressed = false;
             _lastSPressed = false;

@@ -14,10 +14,8 @@ namespace ControllerSupport
 
         private void Awake()
         {
-            DllChecker.CheckDlls();
             _logger = Logger;
             _logger.LogInfo("Controller Support plugin loaded!");
-
             _configManager = new ConfigManager(Config);
             _inputManager = new InputManager(_logger, _configManager);
             InputSystem.onBeforeUpdate += OnInputSystemUpdate;

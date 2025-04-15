@@ -34,13 +34,11 @@ namespace ControllerSupport
         {
             float normalizedX = x / 32768f;
             float normalizedY = y / 32768f;
-
             if (Math.Abs(normalizedX) > _configManager.DeadZoneRadius || Math.Abs(normalizedY) > _configManager.DeadZoneRadius)
             {
                 int dx = (int)(normalizedX * _configManager.MouseSensitivity);
                 int dy = (int)(-normalizedY * _configManager.MouseSensitivity);
                 mouse_event((int)MouseEventFlags.Move, dx, dy, 0, 0);
-
                 if (_configManager.DebugOutput)
                     _logger.LogInfo($"Mouse move: {dx}, {dy}");
             }
@@ -82,16 +80,13 @@ namespace ControllerSupport
         public void Scroll(float amount)
         {
             _scrollAccumulator += amount;
-
             // Only trigger a scroll event when we've accumulated enough
             if (Math.Abs(_scrollAccumulator) >= 0.0084f)
             {
                 // Use the minimum threshold value that works
                 float scrollValue = Math.Sign(_scrollAccumulator) * 0.0084f;
                 int scrollAmount = (int)(scrollValue * 120);
-
                 mouse_event((int)MouseEventFlags.Wheel, 0, 0, scrollAmount, 0);
-
                 // Reduce the accumulator but don't reset completely
                 // This preserves any remainder for the next frame
                 _scrollAccumulator -= scrollValue;
