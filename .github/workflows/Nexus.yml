@@ -65,4 +65,4 @@ jobs:
           NEXUSMOD_API_KEY: ${{ secrets.NEXUS_API_KEY }}
           NEXUSMOD_SESSION_COOKIE: ${{ secrets.NEXUS_SESSION_COOKIE }}
         run: |
-          drmu nx upload 49 ./dist/ControllerSupport.zip -f "ControllerSupport" -v ${{ env.VERSION }} -t "Utilities" -g "repo" -d "${{ env.DESCRIPTION }}"
+          drmu nx upload 49 ./dist/ControllerSupport.zip -f "ControllerSupport" -v ${{ env.VERSION }} -t "Main" -g "repo" -d "${{ env.DESCRIPTION }}"
