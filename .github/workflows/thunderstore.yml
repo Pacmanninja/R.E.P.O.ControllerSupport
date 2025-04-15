@@ -1,4 +1,3 @@
-# Place this in your main repository at: .github/workflows/update-thunderstore.yml
 name: Update Thunderstore Repository
 
 on:
@@ -99,14 +98,13 @@ jobs:
           echo "Listing all directories:"
           find . -type d -maxdepth 2
           
-          # Try to find the DLL file with more flexible search
-          echo "Searching for ControllerSupport.dll in all subdirectories:"
-          DLL_PATH=$(find . -name "ControllerSupport.dll" -type f)
+          # Find the DLL file in the extracted files only (not in thunderstore-repo)
+          DLL_PATH=$(find ./extracted-files -name "ControllerSupport.dll" -type f | head -n 1)
           
           if [ -z "$DLL_PATH" ]; then
-            echo "Error: ControllerSupport.dll not found in any directory!"
+            echo "Error: ControllerSupport.dll not found in extracted files!"
             echo "Listing all files to see what we have:"
-            find . -type f | grep -i ".dll"
+            find ./extracted-files -type f
             exit 1
           fi
           
@@ -210,7 +208,7 @@ jobs:
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "Update to version ${{ github.ref_name }}"
+            git commit -m "Update to version $VERSION_CLEAN"
             git push
             echo "Changes committed and pushed successfully"
           fi
