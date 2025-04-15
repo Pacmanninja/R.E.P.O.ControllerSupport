@@ -1,0 +1,93 @@
+name: Auto Release on Version Commit
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  check-and-release:
+    runs-on: ubuntu-latest
+    if: startsWith(github.event.head_commit.message, '1:') || startsWith(github.event.head_commit.message, '2:') || startsWith(github.event.head_commit.message, '3:')
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: Check if ControllerSupport.dll was modified
+        id: check_dll
+        run: |
+          git diff --name-only ${{ github.event.before }} ${{ github.event.after }} | grep -q "bin/Debug/net48/ControllerSupport.dll" && echo "dll_modified=true" >> $GITHUB_OUTPUT || echo "dll_modified=false" >> $GITHUB_OUTPUT
+      
+      - name: Get latest release
+        if: steps.check_dll.outputs.dll_modified == 'true'
+        id: latest_release
+        uses: pozetroninc/github-action-get-latest-release@master
+        with:
+          repository: ${{ github.repository }}
+          excludes: prerelease, draft
+      
+      - name: Calculate new version
+        if: steps.check_dll.outputs.dll_modified == 'true'
+        id: version
+        run: |
+          # Extract current version without 'v' prefix
+          CURRENT_VERSION="${{ steps.latest_release.outputs.release }}"
+          CURRENT_VERSION=${CURRENT_VERSION#v}
+          
+          # Split version into components
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+          
+          # Update version based on commit prefix
+          if [[ "${{ github.event.head_commit.message }}" == 1:* ]]; then
+            # Increment patch version
+            PATCH=$((PATCH + 1))
+          elif [[ "${{ github.event.head_commit.message }}" == 2:* ]]; then
+            # Increment minor version, reset patch
+            MINOR=$((MINOR + 1))
+            PATCH=0
+          elif [[ "${{ github.event.head_commit.message }}" == 3:* ]]; then
+            # Increment major version, reset minor and patch
+            MAJOR=$((MAJOR + 1))
+            MINOR=0
+            PATCH=0
+          fi
+          
+          # Set new version
+          NEW_VERSION="v$MAJOR.$MINOR.$PATCH"
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "version_number=$MAJOR.$MINOR.$PATCH" >> $GITHUB_OUTPUT
+      
+      - name: Create zip package
+        if: steps.check_dll.outputs.dll_modified == 'true'
+        run: |
+          mkdir -p ./dist
+          cp ./bin/Debug/net48/ControllerSupport.dll ./dist/
+          cp ./bin/Debug/net48/SharpDX.dll ./dist/
+          cp ./bin/Debug/net48/SharpDX.XInput.dll ./dist/
+          cd ./dist
+          zip -r ../ControllerSupport.zip ./*
+      
+      - name: Create Release
+        if: steps.check_dll.outputs.dll_modified == 'true'
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.version.outputs.new_version }}
+          name: Release ${{ steps.version.outputs.new_version }}
+          body: ${{ github.event.head_commit.message }}
+          draft: false
+          prerelease: false
+          files: ./ControllerSupport.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.THUNDERSTORE_REPO_TOKEN }}
+      
+      # Optional: Trigger Nexus upload workflow
+      - name: Trigger Nexus Upload
+        if: steps.check_dll.outputs.dll_modified == 'true'
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.THUNDERSTORE_REPO_TOKEN }}
+          event-type: upload-to-nexus
+          client-payload: '{"version": "${{ steps.version.outputs.version_number }}", "release_url": "${{ steps.create_release.outputs.upload_url }}", "release_notes": "${{ github.event.head_commit.message }}"}'
