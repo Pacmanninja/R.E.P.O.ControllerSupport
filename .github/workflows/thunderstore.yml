@@ -20,6 +20,12 @@ jobs:
           token: ${{ secrets.THUNDERSTORE_REPO_TOKEN }}
           path: thunderstore-repo
       
+      - name: Debug working directory
+        run: |
+          echo "Current working directory: $(pwd)"
+          echo "Listing root directory contents:"
+          ls -la
+      
       - name: Download release assets
         uses: robinraju/release-downloader@v1
         with:
@@ -29,21 +35,82 @@ jobs:
           out-file-path: 'release-zip'
           token: ${{ secrets.GITHUB_TOKEN }}
       
+      - name: Debug download results
+        run: |
+          echo "Checking if release-zip directory exists:"
+          if [ -d "release-zip" ]; then
+            echo "Directory exists. Contents:"
+            ls -la release-zip
+            echo "Found these zip files:"
+            find release-zip -name "*.zip" -type f
+          else
+            echo "ERROR: release-zip directory does not exist!"
+            echo "Current directory contents:"
+            ls -la
+          fi
+      
+      - name: Manual extraction fallback
+        if: success() || failure()  # Run even if previous step failed
+        run: |
+          # Find the zip file
+          ZIP_FILES=$(find . -name "*.zip" -type f)
+          echo "Found zip files: $ZIP_FILES"
+          
+          # Create extraction directory
+          mkdir -p extracted-files
+          
+          # Try to extract using unzip
+          for ZIP_FILE in $ZIP_FILES; do
+            echo "Extracting $ZIP_FILE to extracted-files"
+            unzip -o "$ZIP_FILE" -d extracted-files || echo "Extraction failed for $ZIP_FILE"
+          done
+          
+          echo "Extraction directory contents:"
+          ls -la extracted-files || echo "Cannot list extracted-files (might not exist)"
+          
+          # Recursively list all files in extracted-files
+          echo "All files in extraction directory:"
+          find extracted-files -type f || echo "No files found in extracted-files"
+      
       - name: Extract release zip
         uses: ihiroky/extract-action@v1
         with:
           file_path: release-zip/*.zip
           extract_dir: extracted-files
       
+      - name: Debug extraction results
+        run: |
+          echo "Checking if extracted-files directory exists:"
+          if [ -d "extracted-files" ]; then
+            echo "Directory exists. Contents:"
+            ls -la extracted-files
+            echo "All files in extracted-files (recursive):"
+            find extracted-files -type f
+          else
+            echo "ERROR: extracted-files directory does not exist!"
+            echo "Current directory contents:"
+            ls -la
+          fi
+      
       - name: Update DLL in Thunderstore repo
         run: |
-          # Find the DLL file
-          DLL_PATH=$(find extracted-files -name "ControllerSupport.dll" -type f)
+          echo "Starting DLL update process"
+          echo "Current directory: $(pwd)"
+          echo "Listing all directories:"
+          find . -type d -maxdepth 2
+          
+          # Try to find the DLL file with more flexible search
+          echo "Searching for ControllerSupport.dll in all subdirectories:"
+          DLL_PATH=$(find . -name "ControllerSupport.dll" -type f)
           
           if [ -z "$DLL_PATH" ]; then
-            echo "Error: ControllerSupport.dll not found in the release!"
+            echo "Error: ControllerSupport.dll not found in any directory!"
+            echo "Listing all files to see what we have:"
+            find . -type f | grep -i ".dll"
             exit 1
           fi
+          
+          echo "Found DLL at: $DLL_PATH"
           
           # Ensure target directory exists
           mkdir -p thunderstore-repo/BepInEx/plugins
@@ -51,7 +118,13 @@ jobs:
           # Copy the DLL
           cp "$DLL_PATH" thunderstore-repo/BepInEx/plugins/
           
-          echo "DLL updated successfully"
+          # Verify the copy worked
+          if [ -f "thunderstore-repo/BepInEx/plugins/ControllerSupport.dll" ]; then
+            echo "DLL updated successfully"
+          else
+            echo "Error: DLL copy failed!"
+            exit 1
+          fi
       
       - name: Get release info
         id: release_info
@@ -63,10 +136,24 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
+      - name: Debug release info
+        run: |
+          echo "Release info data:"
+          echo '${{ steps.release_info.outputs.data }}' | jq '.'
+      
       - name: Update manifest.json and CHANGELOG.md
         run: |
           # Get version from release tag (remove 'v' prefix)
           VERSION="${{ github.ref_name }}"
+          echo "Raw version from ref_name: $VERSION"
+          
+          # If running manually and ref_name isn't a version tag, get it from the release info
+          if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+            echo "Not triggered by a version tag release, getting version from API"
+            VERSION=$(echo '${{ steps.release_info.outputs.data }}' | jq -r '.tag_name')
+            echo "Version from API: $VERSION"
+          fi
+          
           VERSION_CLEAN=$(echo $VERSION | sed 's/^v//')
           echo "Using version: $VERSION_CLEAN"
           
@@ -76,23 +163,33 @@ jobs:
           
           # Update manifest.json
           cd thunderstore-repo
+          echo "Thunderstore repo contents:"
+          ls -la
+          
           if [ -f "manifest.json" ]; then
+            echo "Original manifest.json content:"
+            cat manifest.json
+            
             # Install jq if needed
             sudo apt-get update && sudo apt-get install -y jq
             
             # Update version in manifest.json
             jq ".version_number = \"$VERSION_CLEAN\"" manifest.json > temp.json && mv temp.json manifest.json
             echo "Updated manifest.json version to $VERSION_CLEAN"
+            echo "New manifest.json content:"
+            cat manifest.json
           else
             echo "Warning: manifest.json not found"
           fi
           
           # Update CHANGELOG.md
           if [ -f "CHANGELOG.md" ]; then
+            echo "Original CHANGELOG.md exists"
             # Add new release info to the top of the changelog
             echo -e "## $VERSION_CLEAN ($(date '+%Y-%m-%d'))\n$RELEASE_BODY\n\n$(cat CHANGELOG.md)" > CHANGELOG.md
             echo "Updated CHANGELOG.md with release notes"
           else
+            echo "Creating new CHANGELOG.md"
             # Create CHANGELOG.md if it doesn't exist
             echo -e "# Changelog\n\n## $VERSION_CLEAN ($(date '+%Y-%m-%d'))\n$RELEASE_BODY" > CHANGELOG.md
             echo "Created CHANGELOG.md with release notes"
@@ -104,9 +201,23 @@ jobs:
           git config user.name "GitHub Actions Bot"
           git config user.email "actions@github.com"
           
-          git add BepInEx/plugins/ControllerSupport.dll
-          git add manifest.json
-          git add CHANGELOG.md
+          echo "Checking for DLL file before commit:"
+          ls -la BepInEx/plugins/ || echo "DLL directory not found!"
           
-          git commit -m "Update to version ${{ github.ref_name }}"
-          git push
+          git add -A  # Add all changes
+          
+          # Check if there are changes to commit
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update to version ${{ github.ref_name }}"
+            git push
+            echo "Changes committed and pushed successfully"
+          fi
+      
+      - name: Clean up
+        if: always()  # Run even if previous steps failed
+        run: |
+          echo "Cleaning up temporary files"
+          rm -rf release-zip extracted-files
+          echo "Cleanup complete"
