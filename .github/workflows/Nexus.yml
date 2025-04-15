@@ -1,12 +1,21 @@
 name: Upload Mod to NexusMods
 
 on:
-  workflow_dispatch:  # This enables manual triggering
-  push:  # You can keep other triggers as well
-    branches:
-      - main
   release:
-    types: [published]  # Triggers whenever you publish a new release
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (without v prefix)'
+        required: true
+        default: '1.0.0'
+      release_url:
+        description: 'URL to the release asset (zip file)'
+        required: true
+      release_notes:
+        description: 'Release notes/description'
+        required: false
+        default: 'New release'
 
 jobs:
   upload-to-nexus:
@@ -15,25 +24,45 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Get release version
-        id: get_version
+      - name: Setup .NET Core SDK
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: '6.0.x'
+
+      - name: Get release version (from release event)
+        if: github.event_name == 'release'
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
 
-      - name: Download release asset
+      - name: Set version (from manual input)
+        if: github.event_name == 'workflow_dispatch'
+        run: echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_ENV
+
+      - name: Install Digitalroot.ModUploader
+        run: dotnet tool install -g Digitalroot.ModUploader
+
+      - name: Download release asset (from release event)
+        if: github.event_name == 'release'
         run: |
           mkdir -p ./dist
           curl -L -o ./dist/ControllerSupport.zip ${{ github.event.release.assets[0].browser_download_url }}
 
+      - name: Download release asset (from manual input)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          mkdir -p ./dist
+          curl -L -o ./dist/ControllerSupport.zip ${{ github.event.inputs.release_url }}
+
+      - name: Set description (from release event)
+        if: github.event_name == 'release'
+        run: echo "DESCRIPTION<<EOF" >> $GITHUB_ENV && echo "${{ github.event.release.body }}" >> $GITHUB_ENV && echo "EOF" >> $GITHUB_ENV
+
+      - name: Set description (from manual input)
+        if: github.event_name == 'workflow_dispatch'
+        run: echo "DESCRIPTION<<EOF" >> $GITHUB_ENV && echo "${{ github.event.inputs.release_notes }}" >> $GITHUB_ENV && echo "EOF" >> $GITHUB_ENV
+
       - name: Upload mod to NexusMods
-        uses: Vodianoi/upload-mod-to-nexusmods-thunderstore@v0.9.9
-        with:
-          mod-id: '49'
-          archive-file: './dist/ControllerSupport.zip'
-          file-name: 'ControllerSupport'
-          description: ${{ github.event.release.body }}
-          version: ${{ env.VERSION }}
-          category: 'Utilities'
-          game: 'repo'
+        env:
           NEXUSMOD_API_KEY: ${{ secrets.NEXUS_API_KEY }}
-          NEXUSMOD_COOKIE_NEXUSID: ${{ secrets.NEXUS_SESSION_COOKIE }}
-          #NEXUSMOD_COOKIE_SID_DEVELOP: ${{ secrets.NEXUS_SESSION_COOKIE }}
+          NEXUSMOD_SESSION_COOKIE: ${{ secrets.NEXUS_SESSION_COOKIE }}
+        run: |
+          drmu nx upload 49 ./dist/ControllerSupport.zip -f "ControllerSupport" -v ${{ env.VERSION }} -t "Utilities" -g "repo" -d "${{ env.DESCRIPTION }}"
