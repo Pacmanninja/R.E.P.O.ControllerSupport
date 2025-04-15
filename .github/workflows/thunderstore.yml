@@ -1,3 +1,4 @@
+# Place this in your main repository at: .github/workflows/update-thunderstore.yml
 name: Update Thunderstore Repository
 
 on:
@@ -129,10 +130,10 @@ jobs:
         uses: octokit/request-action@v2.x
         with:
           route: GET /repos/{owner}/{repo}/releases/latest
-          owner: Pacmanninja
-          repo: R.E.P.O.ControllerSupport
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          INPUT_OWNER: Pacmanninja
+          INPUT_REPO: R.E.P.O.ControllerSupport
       
       - name: Debug release info
         run: |
