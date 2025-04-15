@@ -1,0 +1,39 @@
+name: Upload Mod to NexusMods
+
+on:
+  workflow_dispatch:  # This enables manual triggering
+  push:  # You can keep other triggers as well
+    branches:
+      - main
+  release:
+    types: [published]  # Triggers whenever you publish a new release
+
+jobs:
+  upload-to-nexus:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Get release version
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+
+      - name: Download release asset
+        run: |
+          mkdir -p ./dist
+          curl -L -o ./dist/ControllerSupport.zip ${{ github.event.release.assets[0].browser_download_url }}
+
+      - name: Upload mod to NexusMods
+        uses: Vodianoi/upload-mod-to-nexusmods-thunderstore@v0.9.9
+        with:
+          mod-id: '49'
+          archive-file: './dist/ControllerSupport.zip'
+          file-name: 'ControllerSupport'
+          description: ${{ github.event.release.body }}
+          version: ${{ env.VERSION }}
+          category: 'Utilities'
+          game: 'repo'
+          NEXUSMOD_API_KEY: ${{ secrets.NEXUS_API_KEY }}
+          NEXUSMOD_COOKIE_NEXUSID: ${{ secrets.NEXUS_SESSION_COOKIE }}
+          #NEXUSMOD_COOKIE_SID_DEVELOP: ${{ secrets.NEXUS_SESSION_COOKIE }}
