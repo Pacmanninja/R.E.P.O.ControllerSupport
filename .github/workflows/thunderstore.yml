@@ -2,6 +2,10 @@
 name: Update Thunderstore Repository
 
 on:
+  workflow_dispatch:  # This enables manual triggering
+  push:  # You can keep other triggers as well
+    branches:
+      - main
   release:
     types: [published]  # Triggers whenever you publish a new release
 
