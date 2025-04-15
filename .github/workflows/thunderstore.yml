@@ -1,0 +1,108 @@
+# Place this in your main repository at: .github/workflows/update-thunderstore.yml
+name: Update Thunderstore Repository
+
+on:
+  release:
+    types: [published]  # Triggers whenever you publish a new release
+
+jobs:
+  update-thunderstore:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Thunderstore repository
+        uses: actions/checkout@v4
+        with:
+          repository: Pacmanninja/ThunderstoreREPOController
+          token: ${{ secrets.THUNDERSTORE_REPO_TOKEN }}
+          path: thunderstore-repo
+      
+      - name: Download release assets
+        uses: robinraju/release-downloader@v1
+        with:
+          repository: Pacmanninja/R.E.P.O.ControllerSupport
+          latest: true
+          fileName: '*.zip'
+          out-file-path: 'release-zip'
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Extract release zip
+        uses: ihiroky/extract-action@v1
+        with:
+          file_path: release-zip/*.zip
+          extract_dir: extracted-files
+      
+      - name: Update DLL in Thunderstore repo
+        run: |
+          # Find the DLL file
+          DLL_PATH=$(find extracted-files -name "ControllerSupport.dll" -type f)
+          
+          if [ -z "$DLL_PATH" ]; then
+            echo "Error: ControllerSupport.dll not found in the release!"
+            exit 1
+          fi
+          
+          # Ensure target directory exists
+          mkdir -p thunderstore-repo/BepInEx/plugins
+          
+          # Copy the DLL
+          cp "$DLL_PATH" thunderstore-repo/BepInEx/plugins/
+          
+          echo "DLL updated successfully"
+      
+      - name: Get release info
+        id: release_info
+        uses: octokit/request-action@v2.x
+        with:
+          route: GET /repos/{owner}/{repo}/releases/latest
+          owner: Pacmanninja
+          repo: R.E.P.O.ControllerSupport
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Update manifest.json and CHANGELOG.md
+        run: |
+          # Get version from release tag (remove 'v' prefix)
+          VERSION="${{ github.ref_name }}"
+          VERSION_CLEAN=$(echo $VERSION | sed 's/^v//')
+          echo "Using version: $VERSION_CLEAN"
+          
+          # Get release description
+          RELEASE_BODY=$(echo '${{ steps.release_info.outputs.data }}' | jq -r '.body')
+          echo "Release description obtained"
+          
+          # Update manifest.json
+          cd thunderstore-repo
+          if [ -f "manifest.json" ]; then
+            # Install jq if needed
+            sudo apt-get update && sudo apt-get install -y jq
+            
+            # Update version in manifest.json
+            jq ".version_number = \"$VERSION_CLEAN\"" manifest.json > temp.json && mv temp.json manifest.json
+            echo "Updated manifest.json version to $VERSION_CLEAN"
+          else
+            echo "Warning: manifest.json not found"
+          fi
+          
+          # Update CHANGELOG.md
+          if [ -f "CHANGELOG.md" ]; then
+            # Add new release info to the top of the changelog
+            echo -e "## $VERSION_CLEAN ($(date '+%Y-%m-%d'))\n$RELEASE_BODY\n\n$(cat CHANGELOG.md)" > CHANGELOG.md
+            echo "Updated CHANGELOG.md with release notes"
+          else
+            # Create CHANGELOG.md if it doesn't exist
+            echo -e "# Changelog\n\n## $VERSION_CLEAN ($(date '+%Y-%m-%d'))\n$RELEASE_BODY" > CHANGELOG.md
+            echo "Created CHANGELOG.md with release notes"
+          fi
+      
+      - name: Commit and push changes
+        run: |
+          cd thunderstore-repo
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          
+          git add BepInEx/plugins/ControllerSupport.dll
+          git add manifest.json
+          git add CHANGELOG.md
+          
+          git commit -m "Update to version ${{ github.ref_name }}"
+          git push
