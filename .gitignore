@@ -5,3 +5,4 @@ ControllerSupport.sln
 *.sln
 *.props
 *.cache
+/backup

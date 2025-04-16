@@ -1,35 +1,44 @@
 ﻿using BepInEx.Configuration;
+using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
+using System.Diagnostics;
 
 namespace ControllerSupport
 {
     public class ConfigManager
     {
         private ConfigFile _config;
+
+        // Mouse Controls
         private ConfigEntry<float> _scrollSpeedConfig;
+        public float MouseSensitivity { get; private set; }
+        public float ScrollSpeed { get; private set; }
+
+        // Movement Controls
         private ConfigEntry<float> _deadZoneRadiusConfig;
         private ConfigEntry<float> _diagonalZoneSizeConfig;
+        public float DeadZoneRadius { get; private set; }
+        public float DiagonalZoneSize { get; private set; }
 
+        // Toggle Controls
         public bool EnableTabToggle { get; private set; }
         public bool EnableCtrlToggle { get; private set; }
         public bool EnableShiftToggle { get; private set; }
-        public float ScrollSpeed { get; private set; }
-        public float DeadZoneRadius { get; private set; }
-        public float DiagonalZoneSize { get; private set; }
-        public float MouseSensitivity { get; private set; }
-        public bool DebugOutput { get; private set; }
-        public bool DevMode { get; private set; }
 
-        // Key interaction settings
-        public bool ReleaseCtrlOnShift { get; private set; }
+        // Key Interactions
         public bool ReleaseTabOnShift { get; private set; }
+        public bool ReleaseCtrlOnShift { get; private set; }
         public bool ReleaseCtrlOnA { get; private set; }
         public bool AutoReleaseShiftAfterWASD { get; private set; }
         public float ShiftReleaseDelay { get; private set; }
 
-        // Current joystick state for dev tools
+        // Debug Options
+        public bool DebugOutput { get; private set; }
+        public bool DevMode { get; private set; }
+
+        // Dev tool properties
         public float CurrentJoystickX { get; set; }
         public float CurrentJoystickY { get; set; }
         public float CurrentJoystickAngle { get; set; }
@@ -39,98 +48,97 @@ namespace ControllerSupport
             _config = config;
             string configPath = config.ConfigFilePath;
 
-            // First bind the configuration entries so the file is created
-            // Toggle Controls
-            EnableTabToggle = config.Bind("Toggle Controls", "EnableMapToggle", true,
-                "Enable toggle functionality for the Map key (Back button). When true, pressing Back will toggle Map on/off instead of requiring you to hold the button.").Value;
-
-            EnableCtrlToggle = config.Bind("Toggle Controls", "EnableCrouchToggle", true,
-                "Enable toggle functionality for the Crouch key (B button). When true, pressing B will toggle Crouch on/off instead of requiring you to hold the button.").Value;
-
-            EnableShiftToggle = config.Bind("Toggle Controls", "EnableRunToggle", false,
-                "Enable toggle functionality for the Run key (L3 button). When true, pressing L3 will toggle Run on/off instead of requiring you to hold the button.").Value;
-
-            // Key Interactions
-            ReleaseCtrlOnShift = config.Bind("Key Interactions", "ReleaseCrouchOnRun", true,
-                "When enabled, activating Run will automatically release Crouch if it's toggled on.").Value;
-
-            ReleaseTabOnShift = config.Bind("Key Interactions", "ReleaseMapOnRun", true,
-                "When enabled, pressing Run will automatically release Map if it's active.").Value;
-
-            ReleaseCtrlOnA = config.Bind("Key Interactions", "ReleaseCrouchOnJump", true,
-                "When enabled, pressing Jump will automatically release Crouch if it's toggled on.").Value;
-
-            AutoReleaseShiftAfterWASD = config.Bind("Key Interactions", "AutoReleaseRunAfterWASD", true,
-                "When enabled, Run will be automatically released after WASD keys are inactive for the specified delay.").Value;
-
-            ShiftReleaseDelay = config.Bind("Key Interactions", "RunReleaseDelay", 0.5f,
-                "Delay in seconds before automatically releasing Run after WASD keys become inactive.").Value;
+            // Mouse Controls
+            MouseSensitivity = config.Bind("Mouse Controls", "MouseSensitivity", 10.0f,
+                "Sensitivity of the right stick for mouse movement. Higher values make the mouse move faster.").Value;
+            _scrollSpeedConfig = config.Bind("Mouse Controls", "ScrollSpeed", 0.0021f,
+                "Adjust the scroll speed for bumper buttons (RB/LB). Lower values result in slower scrolling, higher values in faster scrolling.");
+            ScrollSpeed = _scrollSpeedConfig.Value;
 
             // Movement Controls
             _deadZoneRadiusConfig = config.Bind("Movement Controls", "DeadZoneRadius", 0.25f,
                 "Radius of the center dead zone for the left joystick (0.0 to 1.0). Higher values require more joystick movement before keys are pressed.");
-
             _diagonalZoneSizeConfig = config.Bind("Movement Controls", "DiagonalZoneSize", 0.7071f,
                 "Size of the diagonal zones for the left joystick (0.5 to 1.0). Higher values make diagonal movement more likely.");
-
-            // Mouse Controls
-            MouseSensitivity = config.Bind("Mouse Controls", "MouseSensitivity", 10.0f,
-                "Sensitivity of the right stick for mouse movement. Higher values make the mouse move faster.").Value;
-
-            _scrollSpeedConfig = config.Bind("Mouse Controls", "ScrollSpeed", 0.0021f,
-                "Adjust the scroll speed for bumper buttons (RB/LB). Lower values result in slower scrolling, higher values in faster scrolling.");
-
-            // Debug Options
-            DebugOutput = config.Bind("Debug", "EnableDebugOutput", false,
-                "Enable detailed debug output in the console. Set to false to reduce console spam.").Value;
-
-            DevMode = config.Bind("Debug", "DevMode", false,
-                "Enable development mode with runtime configuration adjustment using numpad keys. Numpad+/- adjusts scroll speed, Numpad7 sets dead zone, Numpad4 sets diagonal zone.").Value;
-
-            // Initialize properties from config entries
-            ScrollSpeed = _scrollSpeedConfig.Value;
             DeadZoneRadius = _deadZoneRadiusConfig.Value;
             DiagonalZoneSize = _diagonalZoneSizeConfig.Value;
 
-            // Now the file should exist, check if we need to add our custom comments
-            if (File.Exists(configPath))
+            // Toggle Controls
+            EnableTabToggle = config.Bind("Toggle Controls", "EnableMapToggle", true,
+                "Enable toggle functionality for the Map key (Back button).").Value;
+            EnableCtrlToggle = config.Bind("Toggle Controls", "EnableCrouchToggle", true,
+                "Enable toggle functionality for the Crouch key (B button).").Value;
+            EnableShiftToggle = config.Bind("Toggle Controls", "EnableRunToggle", false,
+                "Enable toggle functionality for the Run key (L3 button).").Value;
+
+            // Key Interactions
+            ReleaseTabOnShift = config.Bind("Key Interactions", "ReleaseMapOnRun", true,
+                "When enabled, pressing Run will automatically release Map if active.").Value;
+            ReleaseCtrlOnShift = config.Bind("Key Interactions", "ReleaseCrouchOnRun", true,
+                "When enabled, activating Run will automatically release Crouch.").Value;
+            ReleaseCtrlOnA = config.Bind("Key Interactions", "ReleaseCrouchOnJump", true,
+                "When enabled, pressing Jump will automatically release Crouch.").Value;
+            AutoReleaseShiftAfterWASD = config.Bind("Key Interactions", "AutoReleaseRunAfterWASD", true,
+                "Automatically release Run after WASD inactivity.").Value;
+            ShiftReleaseDelay = config.Bind("Key Interactions", "RunReleaseDelay", 0.5f,
+                "Delay before auto-releasing Run (seconds).").Value;
+
+            // Debug Options
+            DebugOutput = config.Bind("Debug", "EnableDebugOutput", false,
+                "Enable detailed debug logging.").Value;
+            DevMode = config.Bind("Debug", "DevMode", false,
+                "Enable developer tools with numpad controls.").Value;
+
+            // Custom comment injection with hex protection
+            ApplyCustomComments(configPath);
+        }
+
+        private void ApplyCustomComments(string configPath)
+        {
+            try
             {
-                string[] existingLines = File.ReadAllLines(configPath);
-                bool hasCustomComments = existingLines.Any(line => line.Contains("Nexus download:") || line.Contains("repo:"));
+                if (!File.Exists(configPath)) return;
 
-                if (!hasCustomComments)
+                var existingLines = File.ReadAllLines(configPath);
+                if (existingLines.Any(l => l.Contains("Nexus") || l.Contains("repo"))) return;
+
+                var newLines = new List<string>();
+                int commentLineCount = 0;
+
+                foreach (var line in existingLines)
                 {
-                    List<string> newLines = new List<string>();
-
-                    // Add BepInEx's auto-generated comments (typically first two lines)
-                    int commentLineCount = 0;
-                    foreach (string line in existingLines)
+                    if (line.StartsWith("##"))
                     {
-                        if (line.StartsWith("##"))
-                        {
-                            newLines.Add(line);
-                            commentLineCount++;
-                        }
-                        else
-                        {
-                            break;
-                        }
+                        newLines.Add(line);
+                        commentLineCount++;
                     }
-
-                    // Add our custom comments with character-by-character concatenation
-                    newLines.Add("#" + "#" + " " + "N" + "e" + "x" + "u" + "s" + " " + "d" + "o" + "w" + "n" + "l" + "o" + "a" + "d" + ":" + " " + "h" + "t" + "t" + "p" + "s" + ":" + "/" + "/" + "w" + "w" + "w" + "." + "n" + "e" + "x" + "u" + "s" + "m" + "o" + "d" + "s" + "." + "c" + "o" + "m" + "/" + "r" + "e" + "p" + "o" + "/" + "m" + "o" + "d" + "s" + "/" + "4" + "9");
-                    newLines.Add("#" + "#" + " " + "T" + "h" + "u" + "n" + "d" + "e" + "r" + "s" + "t" + "o" + "r" + "e" + " " + "d" + "o" + "w" + "n" + "l" + "o" + "a" + "d" + ":" + " " + "h" + "t" + "t" + "p" + "s" + ":" + "/" + "/" + "t" + "h" + "u" + "n" + "d" + "e" + "r" + "s" + "t" + "o" + "r" + "e" + "." + "i" + "o" + "/" + "c" + "/" + "r" + "e" + "p" + "o" + "/" + "p" + "/" + "P" + "a" + "c" + "m" + "a" + "n" + "n" + "i" + "n" + "j" + "a" + "9" + "9" + "8" + "/" + "C" + "o" + "n" + "t" + "r" + "o" + "l" + "l" + "e" + "r" + "_" + "S" + "u" + "p" + "p" + "o" + "r" + "t" + "/");
-                    newLines.Add("#" + "#" + " " + "r" + "e" + "p" + "o" + ":" + " " + "h" + "t" + "t" + "p" + "s" + ":" + "/" + "/" + "g" + "i" + "t" + "h" + "u" + "b" + "." + "c" + "o" + "m" + "/" + "P" + "a" + "c" + "m" + "a" + "n" + "n" + "i" + "n" + "j" + "a" + "/" + "R" + "." + "E" + "." + "P" + "." + "O" + "." + "C" + "o" + "n" + "t" + "r" + "o" + "l" + "l" + "e" + "r" + "S" + "u" + "p" + "p" + "o" + "r" + "t");
-
-                    // Add the rest of the config file
-                    for (int i = commentLineCount; i < existingLines.Length; i++)
-                    {
-                        newLines.Add(existingLines[i]);
-                    }
-
-                    File.WriteAllLines(configPath, newLines.ToArray());
+                    else break;
                 }
+
+                // Hex-encoded custom comments
+                newLines.AddRange(new[]
+                {
+                    Decode("2323204E6578757320646F776E6C6F61643A2068747470733A2F2F7777772E6E657875736D6F64732E636F6D2F7265706F2F6D6F64732F3439"),
+                    Decode("2323205468756E64657273746F726520646F776E6C6F61643A2068747470733A2F2F7468756E64657273746F72652E696F2F632F7265706F2F702F5061636D616E6E696E6A613939382F436F6E74726F6C6C65725F537570706F72742F"),
+                    Decode("2323207265706F3A2068747470733A2F2F6769746875622E636F6D2F5061636D616E6E696E6A612F522E452E502E4F2E436F6E74726F6C6C6572537570706F7274")
+                });
+
+                newLines.AddRange(existingLines.Skip(commentLineCount));
+                File.WriteAllLines(configPath, newLines.ToArray());
             }
+            catch (Exception ex)
+            {
+                if (Debugger.IsAttached)
+                    Trace.WriteLine($"Custom comment injection failed: {ex.Message}");
+            }
+        }
+
+        private static string Decode(string hexInput)
+        {
+            var bytes = new byte[hexInput.Length / 2];
+            for (int i = 0; i < bytes.Length; i++)
+                bytes[i] = Convert.ToByte(hexInput.Substring(i * 2, 2), 16);
+            return System.Text.Encoding.UTF8.GetString(bytes);
         }
 
         public float IncreaseScrollSpeed()

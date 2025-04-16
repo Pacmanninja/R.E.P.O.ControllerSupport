@@ -16,8 +16,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="backup\**" />
     <Compile Remove="plugins\**" />
+    <EmbeddedResource Remove="backup\**" />
     <EmbeddedResource Remove="plugins\**" />
+    <None Remove="backup\**" />
     <None Remove="plugins\**" />
   </ItemGroup>
 

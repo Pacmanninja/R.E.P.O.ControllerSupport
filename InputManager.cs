@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Linq;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 using BepInEx.Logging;
 using SharpDX.XInput;
 using UnityEngine;
@@ -17,6 +20,28 @@ namespace ControllerSupport
         private State _previousState;
         private bool _isControllerConnected;
 
+        // Win32 API declarations for window management
+        [DllImport("user32.dll")]
+        private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        private static extern uint GetWindowThreadProcessId(IntPtr hWnd, IntPtr lpdwProcessId);
+
+        [DllImport("user32.dll")]
+        private static extern bool AttachThreadInput(uint idAttach, uint idAttachTo, bool fAttach);
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr GetForegroundWindow();
+
+        [DllImport("user32.dll")]
+        private static extern uint GetCurrentThreadId();
+
+        [DllImport("user32.dll")]
+        private static extern bool BringWindowToTop(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
         public InputManager(ManualLogSource logger, ConfigManager configManager)
         {
             _logger = logger;
@@ -26,7 +51,6 @@ namespace ControllerSupport
             _mouseSimulator = new MouseSimulator(logger, configManager);
             _joystickZoneHandler = new JoystickZoneHandler(logger, configManager, _keyboardSimulator);
             _isControllerConnected = _controller.IsConnected;
-
             if (_isControllerConnected)
             {
                 _logger.LogInfo("Controller connected!");
@@ -41,30 +65,25 @@ namespace ControllerSupport
         public void Update()
         {
             ProcessDevInputs();
-
             bool wasConnected = _isControllerConnected;
             _isControllerConnected = _controller.IsConnected;
-
             if (_isControllerConnected && !wasConnected)
             {
                 _logger.LogInfo("Controller connected!");
                 _previousState = _controller.GetState();
             }
-
             if (!_isControllerConnected && wasConnected)
             {
                 _logger.LogWarning("Controller disconnected!");
                 ReleaseAllKeys();
                 return;
             }
-
             if (!_isControllerConnected)
                 return;
 
             try
             {
                 State state = _controller.GetState();
-
                 if (_configManager.DebugOutput)
                 {
                     _logger.LogInfo($"Left Stick: X={state.Gamepad.LeftThumbX}, Y={state.Gamepad.LeftThumbY}");
@@ -76,6 +95,7 @@ namespace ControllerSupport
                 ProcessButtonInputs(state);
                 ProcessJoystickInputs(state);
                 ProcessTriggerInputs(state);
+
                 _previousState = state;
 
                 // Auto-release Shift after WASD inactivity
@@ -108,6 +128,81 @@ namespace ControllerSupport
             }
         }
 
+        // Method to reliably activate a window (more reliable than SetForegroundWindow alone)
+        private void ForceForegroundWindow(IntPtr hWnd)
+        {
+            if (hWnd == IntPtr.Zero) return;
+
+            uint foreThread = GetWindowThreadProcessId(GetForegroundWindow(), IntPtr.Zero);
+            uint appThread = GetCurrentThreadId();
+            const int SW_SHOW = 5;
+
+            if (foreThread != appThread)
+            {
+                AttachThreadInput(foreThread, appThread, true);
+                BringWindowToTop(hWnd);
+                ShowWindow(hWnd, SW_SHOW);
+                AttachThreadInput(foreThread, appThread, false);
+            }
+            else
+            {
+                BringWindowToTop(hWnd);
+                ShowWindow(hWnd, SW_SHOW);
+            }
+        }
+
+        // Method to find and activate the main REPO.exe process
+        private bool ActivateREPOProcess()
+        {
+            try
+            {
+                // Get all REPO processes
+                Process[] processes = Process.GetProcessesByName("REPO");
+
+                if (processes.Length == 0)
+                {
+                    if (_configManager.DebugOutput)
+                        _logger.LogWarning("No REPO.exe process found.");
+                    return false;
+                }
+
+                // Find the main REPO process (not Unity crash handler or other helpers)
+                Process mainProcess = null;
+
+                // First, try to find the process with the most memory (likely the main game)
+                mainProcess = processes.OrderByDescending(p => p.WorkingSet64)
+                    .FirstOrDefault(p => p.MainWindowHandle != IntPtr.Zero);
+
+                if (mainProcess != null)
+                {
+                    ForceForegroundWindow(mainProcess.MainWindowHandle);
+                    if (_configManager.DebugOutput)
+                        _logger.LogInfo($"Activated main REPO.exe process (PID: {mainProcess.Id}, Memory: {mainProcess.WorkingSet64 / 1024 / 1024} MB)");
+                    return true;
+                }
+
+                // If we couldn't find it by memory, just try any with a valid window handle
+                mainProcess = processes.FirstOrDefault(p => p.MainWindowHandle != IntPtr.Zero);
+
+                if (mainProcess != null)
+                {
+                    ForceForegroundWindow(mainProcess.MainWindowHandle);
+                    if (_configManager.DebugOutput)
+                        _logger.LogInfo($"Activated REPO.exe process (PID: {mainProcess.Id})");
+                    return true;
+                }
+
+                if (_configManager.DebugOutput)
+                    _logger.LogWarning("Could not find a valid window handle for any REPO.exe process.");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error activating REPO.exe process: {ex.Message}");
+                return false;
+            }
+        }
+
         private void ProcessDevInputs()
         {
             if (!_configManager.DevMode)
@@ -118,13 +213,11 @@ namespace ControllerSupport
                 float newValue = _configManager.IncreaseScrollSpeed();
                 _logger.LogInfo($"Increased ScrollSpeed to {newValue:F6}");
             }
-
             if (Keyboard.current[Key.NumpadMinus].wasPressedThisFrame)
             {
                 float newValue = _configManager.DecreaseScrollSpeed();
                 _logger.LogInfo($"Decreased ScrollSpeed to {newValue:F6}");
             }
-
             if (Keyboard.current[Key.Numpad7].wasPressedThisFrame)
             {
                 float magnitude = (float)Math.Sqrt(
@@ -133,7 +226,6 @@ namespace ControllerSupport
                 float newValue = _configManager.UpdateDeadZoneRadius(magnitude);
                 _logger.LogInfo($"Updated DeadZoneRadius to {newValue:F4} based on current joystick position");
             }
-
             if (Keyboard.current[Key.Numpad4].wasPressedThisFrame)
             {
                 float newValue = _configManager.UpdateDiagonalZoneSize(_configManager.CurrentJoystickAngle);
@@ -216,6 +308,7 @@ namespace ControllerSupport
                     _keyboardSimulator.ToggleTab();
                     if (_configManager.DebugOutput) _logger.LogInfo("Released Tab due to Shift activation");
                 }
+
                 if (_configManager.EnableShiftToggle)
                 {
                     _keyboardSimulator.ToggleShift();
@@ -328,8 +421,15 @@ namespace ControllerSupport
             // Right Trigger - Left Mouse Button
             if (state.Gamepad.RightTrigger > 128 && _previousState.Gamepad.RightTrigger <= 128)
             {
+                // First, activate REPO window before mouse click
+                ActivateREPOProcess();
+
+                // Small delay to ensure window activation completes
+                System.Threading.Thread.Sleep(10);
+
+                // Then perform mouse action
                 _mouseSimulator.LeftMouseDown();
-                if (_configManager.DebugOutput) _logger.LogInfo("RT pressed - Left Mouse Down");
+                if (_configManager.DebugOutput) _logger.LogInfo("RT pressed - Left Mouse Down (after activating REPO)");
             }
             else if (state.Gamepad.RightTrigger <= 128 && _previousState.Gamepad.RightTrigger > 128)
             {
