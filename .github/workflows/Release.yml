@@ -74,7 +74,8 @@ jobs:
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             VERSION_INCREMENT="${{ github.event.inputs.version_increment }}"
           else
-            VERSION_INCREMENT="${{ github.event.head_commit.message:0:1 }}"
+            # Extract first character of commit message using shell
+            VERSION_INCREMENT=$(echo "${{ github.event.head_commit.message }}" | cut -c1)
           fi
           
           echo "Version increment type: $VERSION_INCREMENT"
