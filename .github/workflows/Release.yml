@@ -18,7 +18,7 @@ jobs:
       - name: Check if ControllerSupport.dll was modified
         id: check_dll
         run: |
-          git diff --name-only ${{ github.event.before }} ${{ github.event.after }} | grep -q "bin/Debug/net48/ControllerSupport.dll" && echo "dll_modified=true" >> $GITHUB_OUTPUT || echo "dll_modified=false" >> $GITHUB_OUTPUT
+          git diff --name-only ${{ github.event.before }} ${{ github.event.after }} | grep -q "bin/Release/net48/ControllerSupport.dll" && echo "dll_modified=true" >> $GITHUB_OUTPUT || echo "dll_modified=false" >> $GITHUB_OUTPUT
       
       - name: Get latest release
         if: steps.check_dll.outputs.dll_modified == 'true'
