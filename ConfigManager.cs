@@ -1,9 +1,10 @@
 ﻿using BepInEx.Configuration;
 using System;
 using System.IO;
-using System.Collections.Generic;
 using System.Linq;
 using System.Diagnostics;
+using System.Collections.Generic;
+using System.Text;
 
 namespace ControllerSupport
 {
@@ -89,56 +90,72 @@ namespace ControllerSupport
             DevMode = config.Bind("Debug", "DevMode", false,
                 "Enable developer tools with numpad controls.").Value;
 
-            // Custom comment injection with hex protection
-            ApplyCustomComments(configPath);
+            // Inject About section if needed
+            InjectAboutSection(configPath);
         }
 
-        private void ApplyCustomComments(string configPath)
+        private void InjectAboutSection(string configPath)
         {
+            // Hex-encoded lines for the About section
+            string[] aboutSectionHex = new[]
+            {
+                "5b41626f75745d", // [About]
+                "2323204e65787573204d6f6473204c696e6b2e", // ## Nexus Mods Link.
+                "232053657474696e6720747970653a20537472696e67", // # Setting type: String
+                "232044656661756c742076616c75653a2068747470733a2f2f7777772e6e657875736d6f64732e636f6d2f7265706f2f6d6f64732f3439", // # Default value: https://www.nexusmods.com/repo/mods/49
+                "4e65787573203d2068747470733a2f2f7777772e6e657875736d6f64732e636f6d2f7265706f2f6d6f64732f3439", // Nexus = https://www.nexusmods.com/repo/mods/49
+                "",
+                "2323205468756e64657273746f7265204c696e6b2e", // ## Thunderstore Link.
+                "232053657474696e6720747970653a20537472696e67", // # Setting type: String
+                "232044656661756c742076616c75653a2068747470733a2f2f7468756e64657273746f72652e696f2f632f7265706f2f702f5061636d616e6e696e6a613939382f436f6e74726f6c6c65725f537570706f72742f", // # Default value: https://thunderstore.io/c/repo/p/Pacmanninja998/Controller_Support/
+                "5468756e64657273746f7265203d2068747470733a2f2f7468756e64657273746f72652e696f2f632f7265706f2f702f5061636d616e6e696e6a613939382f436f6e74726f6c6c65725f537570706f72742f", // Thunderstore = https://thunderstore.io/c/repo/p/Pacmanninja998/Controller_Support/
+                "",
+                "232320476974687562204c696e6b2e", // ## Github Link.
+                "232053657474696e6720747970653a20537472696e67", // # Setting type: String
+                "232044656661756c742076616c75653a2068747470733a2f2f6769746875622e636f6d2f5061636d616e6e696e6a612f522e452e502e4f2e436f6e74726f6c6c6572537570706f7274", // # Default value: https://github.com/Pacmanninja/R.E.P.O.ControllerSupport
+                "476974687562203d2068747470733a2f2f6769746875622e636f6d2f5061636d616e6e696e6a612f522e452e502e4f2e436f6e74726f6c6c6572537570706f7274", // Github = https://github.com/Pacmanninja/R.E.P.O.ControllerSupport
+                ""
+            };
+
+            // Only inject if not present
             try
             {
-                if (!File.Exists(configPath)) return;
+                if (!File.Exists(configPath))
+                    return;
 
-                var existingLines = File.ReadAllLines(configPath);
-                if (existingLines.Any(l => l.Contains("Nexus") || l.Contains("repo"))) return;
+                var lines = File.ReadAllLines(configPath).ToList();
 
-                var newLines = new List<string>();
-                int commentLineCount = 0;
-
-                foreach (var line in existingLines)
+                // Remove any existing [About] section
+                int aboutStart = lines.FindIndex(l => l.Trim().Equals("[About]", StringComparison.OrdinalIgnoreCase));
+                if (aboutStart != -1)
                 {
-                    if (line.StartsWith("##"))
-                    {
-                        newLines.Add(line);
-                        commentLineCount++;
-                    }
-                    else break;
+                    int nextSection = lines.FindIndex(aboutStart + 1, l => l.StartsWith("[") && !l.Trim().Equals("[About]", StringComparison.OrdinalIgnoreCase));
+                    if (nextSection == -1) nextSection = lines.Count;
+                    lines.RemoveRange(aboutStart, nextSection - aboutStart);
                 }
 
-                // Hex-encoded custom comments
-                newLines.AddRange(new[]
-                {
-                    Decode("2323204E6578757320646F776E6C6F61643A2068747470733A2F2F7777772E6E657875736D6F64732E636F6D2F7265706F2F6D6F64732F3439"),
-                    Decode("2323205468756E64657273746F726520646F776E6C6F61643A2068747470733A2F2F7468756E64657273746F72652E696F2F632F7265706F2F702F5061636D616E6E696E6A613939382F436F6E74726F6C6C65725F537570706F72742F"),
-                    Decode("2323207265706F3A2068747470733A2F2F6769746875622E636F6D2F5061636D616E6E696E6A612F522E452E502E4F2E436F6E74726F6C6C6572537570706F7274")
-                });
+                // Insert decoded About section at the top (after initial ## or empty lines)
+                int insertAt = 0;
+                while (insertAt < lines.Count && (lines[insertAt].StartsWith("##") || string.IsNullOrWhiteSpace(lines[insertAt])))
+                    insertAt++;
+                lines.InsertRange(insertAt, aboutSectionHex.Select(DecodeHexLine));
 
-                newLines.AddRange(existingLines.Skip(commentLineCount));
-                File.WriteAllLines(configPath, newLines.ToArray());
+                File.WriteAllLines(configPath, lines);
             }
             catch (Exception ex)
             {
                 if (Debugger.IsAttached)
-                    Trace.WriteLine($"Custom comment injection failed: {ex.Message}");
+                    Debug.WriteLine("Failed to inject About section: " + ex);
             }
         }
 
-        private static string Decode(string hexInput)
+        private static string DecodeHexLine(string hex)
         {
-            var bytes = new byte[hexInput.Length / 2];
+            if (string.IsNullOrWhiteSpace(hex)) return "";
+            var bytes = new byte[hex.Length / 2];
             for (int i = 0; i < bytes.Length; i++)
-                bytes[i] = Convert.ToByte(hexInput.Substring(i * 2, 2), 16);
-            return System.Text.Encoding.UTF8.GetString(bytes);
+                bytes[i] = Convert.ToByte(hex.Substring(i * 2, 2), 16);
+            return Encoding.UTF8.GetString(bytes);
         }
 
         public float IncreaseScrollSpeed()
