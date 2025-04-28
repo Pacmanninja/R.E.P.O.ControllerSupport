@@ -99,7 +99,7 @@ namespace ControllerSupport
             // Hex-encoded lines for the About section
             string[] aboutSectionHex = new[]
             {
-                "5b41626f75745d", // [About]
+                "5b41626f75745d", // [About ]
                 "2323204e65787573204d6f6473204c696e6b2e", // ## Nexus Mods Link.
                 "232053657474696e6720747970653a20537472696e67", // # Setting type: String
                 "232044656661756c742076616c75653a2068747470733a2f2f7777772e6e657875736d6f64732e636f6d2f7265706f2f6d6f64732f3439", // # Default value: https://www.nexusmods.com/repo/mods/49
